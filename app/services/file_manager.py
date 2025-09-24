@@ -23,6 +23,5 @@ class FileManager:
         return Path(*args)
 
     @staticmethod
-    def generate_png_comp(project_code: str, project_path: str, ep: str, seq: str, shot: str, file_type: str) -> str:
-        return os.path.join(project_path, f"{ep}", f"{ep}_{seq}", f"{ep}_{seq}_{shot}", file_type,
-                            f"{project_code}_{ep}_{seq}_{shot}_render_####.{file_type}")
+    def generate_png_comp(project_code: str, project_path: str, ep: str, seq: str, shot: str, file_type: str, export_type: str) -> tuple:
+        return os.path.join(project_path, f"{ep}", f"{ep}_{seq}", f"{ep}_{seq}_{shot}", export_type) , f"{project_code}_{ep}_{seq}_{shot}_{export_type}_####.{file_type}"

@@ -170,10 +170,17 @@ def update_node():
 
     cryp_node.matte_id = str(",".join(sorted(set(empties))))
 
-    output_node = nt.nodes.get("$OUTPUT_NODE")
-    if not output_node:
-        raise ValueError(f"Node '$OUTPUT_NODE' not found in scene '$SCENE_NAME' node tree.")
-    output_node.base_path = "$OUTPUT_NODE_PATH"
+    for name, path, filename in $OUTPUT_NODES:
+        output_node = nt.nodes.get(name)
+        if not output_node:
+            raise ValueError(f"Node '{name}' not found in scene 'Scene' node tree.")
+
+        output_node.base_path = path
+
+        if not getattr(output_node, "file_slots", None) or len(output_node.file_slots) == 0:
+            raise ValueError(f"Node '{name}' has no file slots.")
+
+        output_node.file_slots[0].path = filename
 
 
 # Execute functions
