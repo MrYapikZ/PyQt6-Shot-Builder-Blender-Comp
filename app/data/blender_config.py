@@ -10,4 +10,4 @@ collection_list = [
     ]
 scene_name = 'Scene'
 cryptomatte_node = 'Cryptomatte'
-output_node = 'File Output'
+output_node = ['File Ouput Comp', 'File Ouput Preview']

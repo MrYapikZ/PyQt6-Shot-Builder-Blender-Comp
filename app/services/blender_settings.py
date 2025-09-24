@@ -9,7 +9,7 @@ class BlenderSettings:
     @staticmethod
     def generate_lighting_script(master_file:str, animation_file: str, collection_list: list, camera_collection: str,
                         character_collection: str, start_frame: int, end_frame: int, output_path: str,
-                        scene_name: str, crypto_node: str, output_node: str, output_node_path: str) -> str:
+                        scene_name: str, crypto_node: str, output_node: list) -> str:
         tpl = Template(dedent("""
             import bpy
 
@@ -183,10 +183,17 @@ class BlenderSettings:
             
                 cryp_node.matte_id = str(",".join(sorted(set(empties))))
             
-                output_node = nt.nodes.get("$OUTPUT_NODE")
-                if not output_node:
-                    raise ValueError(f"Node '$OUTPUT_NODE' not found in scene '$SCENE_NAME' node tree.")
-                output_node.base_path = "$OUTPUT_NODE_PATH"
+                for name, path, filename in $OUTPUT_NODES:
+                    output_node = nt.nodes.get(name)
+                    if not output_node:
+                        raise ValueError(f"Node '{name}' not found in scene 'Scene' node tree.")
+            
+                    output_node.base_path = path
+            
+                    if not getattr(output_node, "file_slots", None) or len(output_node.file_slots) == 0:
+                        raise ValueError(f"Node '{name}' has no file slots.")
+            
+                    output_node.file_slots[0].path = filename
             
             
             # Execute functions
@@ -203,6 +210,7 @@ class BlenderSettings:
             
             # Quit Blender
             bpy.ops.wm.quit_blender()
+
         """))
 
         script = tpl.substitute(
@@ -216,8 +224,7 @@ class BlenderSettings:
             OUTPUT_PATH=output_path,
             SCENE_NAME=scene_name,
             CRYPTO_NODE=crypto_node,
-            OUTPUT_NODE=output_node,
-            OUTPUT_NODE_PATH=output_node_path,
+            OUTPUT_NODES=output_node,
         )
 
         return script
