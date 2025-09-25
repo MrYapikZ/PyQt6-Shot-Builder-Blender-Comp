@@ -216,7 +216,8 @@ print("All operations completed successfully.")
 
 # Save the modified Blender file
 bpy.ops.wm.save_as_mainfile(filepath="$OUTPUT_PATH")
-print("File saved as: $OUTPUT_PATH")
+bpy.ops.wm.save_as_mainfile(filepath="$OUTPUT_PATH_PROGRESS")
+print("File saved as: $OUTPUT_PATH and $OUTPUT_PATH_PROGRESS")
 
 # Quit Blender
 bpy.ops.wm.quit_blender()

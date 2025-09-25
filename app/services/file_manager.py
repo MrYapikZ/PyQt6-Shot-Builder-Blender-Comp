@@ -19,9 +19,17 @@ class FileManager:
         return f"{project_code}_{ep}_{seq}_{shot}_{division}.{extension}"
 
     @staticmethod
-    def combine_paths(*args: str) -> Path:
-        return Path(*args)
+    def combine_paths(*args: str, mkdir: bool = False) -> Path:
+        path = Path(*args)
+        if mkdir:
+            path.mkdir(parents=True, exist_ok=True)
+        return path
 
     @staticmethod
     def generate_png_comp(project_code: str, project_path: str, ep: str, seq: str, shot: str, file_type: str, export_type: str) -> tuple:
         return os.path.join(project_path, f"{ep}", f"{ep}_{seq}", f"{ep}_{seq}_{shot}", export_type) , f"{project_code}_{ep}_{seq}_{shot}_{export_type}_####.{file_type}"
+
+    @staticmethod
+    def add_version_to_filename(file_path: str, version: int) -> str:
+        base, ext = os.path.splitext(file_path)
+        return f"{base}_v{version:03d}{ext}"

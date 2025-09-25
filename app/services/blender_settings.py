@@ -8,7 +8,7 @@ class BlenderSettings:
 
     @staticmethod
     def generate_lighting_script(master_file:str, animation_file: str, collection_list: list, camera_collection: str,
-                        character_collection: str, start_frame: int, end_frame: int, output_path: str,
+                        character_collection: str, start_frame: int, end_frame: int, output_path: str, output_path_progress: str,
                         scene_name: str, crypto_node: str, output_node: list) -> str:
         tpl = Template(dedent("""
             import bpy
@@ -229,10 +229,12 @@ class BlenderSettings:
             
             # Save the modified Blender file
             bpy.ops.wm.save_as_mainfile(filepath="$OUTPUT_PATH")
-            print("File saved as: $OUTPUT_PATH")
+            bpy.ops.wm.save_as_mainfile(filepath="$OUTPUT_PATH_PROGRESS")
+            print("File saved as: $OUTPUT_PATH and $OUTPUT_PATH_PROGRESS")
             
             # Quit Blender
             bpy.ops.wm.quit_blender()
+
         """))
 
         script = tpl.substitute(
@@ -244,6 +246,7 @@ class BlenderSettings:
             START_FRAME=start_frame,
             END_FRAME=end_frame,
             OUTPUT_PATH=output_path,
+            OUTPUT_PATH_PROGRESS=output_path_progress,
             SCENE_NAME=scene_name,
             CRYPTO_NODE=crypto_node,
             OUTPUT_NODES=output_node,
