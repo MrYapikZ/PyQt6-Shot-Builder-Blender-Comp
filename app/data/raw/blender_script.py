@@ -174,10 +174,10 @@ def update_camera():
 
     active_camera = bpy.context.scene.camera
     if active_camera:
-        active_camera.clip_end = 1000
-        active_camera.dof.use_dof = True
-        active_camera.dof.driver_remove("aperture_fstop")
-        active_camera.dof.driver_remove("focus_distance")
+        active_camera.data.clip_end = 1000
+        active_camera.data.dof.use_dof = True
+        active_camera.data.dof.driver_remove("aperture_fstop")
+        active_camera.data.dof.driver_remove("focus_distance")
         print(f"Camera '{active_camera.name}' settings updated: DOF disabled, clip_end set to 1000")
     else:
         print("No active camera found in the scene.")
