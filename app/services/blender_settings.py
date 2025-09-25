@@ -176,7 +176,16 @@ class BlenderSettings:
             
             def update_camera():
                 # Update camera settings
-                active_camera = bpy.data.cameras["Dolly_Camera"]
+                scene = bpy.data.scenes['Scene']
+            
+                cam_obj = next((obj for obj in scene.objects if obj.type == 'CAMERA'), None)
+            
+                if cam_obj:
+                    scene.camera = cam_obj
+                else:
+                    print("cam not found")
+                    
+                active_camera = bpy.context.scene.camera
                 if active_camera:
                     active_camera.clip_end = 1000
                     active_camera.dof.use_dof = True
