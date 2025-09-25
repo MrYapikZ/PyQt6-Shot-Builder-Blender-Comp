@@ -171,8 +171,6 @@ class ShotGeneratorHandler(QWidget):
                     output_node_data.append((output_node[0], comp_path, comp_filename))
                     output_node_data.append((output_node[1], preview_path, preview_filename))
 
-                    print(output_node_data)
-
                     lighting_script = BlenderSettings.generate_lighting_script(master_file=str(mastershot_path),
                                                                                animation_file=str(animation_file),
                                                                                collection_list=collection_list,
@@ -186,7 +184,6 @@ class ShotGeneratorHandler(QWidget):
                                                                                output_node=output_node_data,
                                                                                )
 
-                    print(lighting_script)
                     execute_blender = ExecuteProgram().blender_execute(blender_path=blender_executable,
                                                                        script=lighting_script)
 
