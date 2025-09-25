@@ -148,7 +148,13 @@ class ShotGeneratorHandler(QWidget):
                                                                      division=division_list[1][3], ep=ep, seq=seq,
                                                                      shot=shot)
                     lighting_file = FileManager().combine_paths(lighting_path, shot_file)
+                    lighting_progress_dir = FileManager().combine_paths(lighting_path, "progress", mkdir=True)
+                    versioned_name = FileManager().add_version_to_filename(shot_file, version=0)
+                    lighting_progress_file = FileManager().combine_paths(str(lighting_progress_dir), versioned_name)
+
+                    print(lighting_progress_dir)
                     print(lighting_file)
+                    print(lighting_progress_file)
                     output_node_data = []
                     comp_path, comp_filename = FileManager().generate_png_comp(
                         project_code=project_data[2],
@@ -179,6 +185,7 @@ class ShotGeneratorHandler(QWidget):
                                                                                start_frame=start_frame,
                                                                                end_frame=end_frame,
                                                                                output_path=str(lighting_file),
+                                                                               output_path_progress=str(lighting_progress_file),
                                                                                scene_name=scene_name,
                                                                                crypto_node=cryptomatte_node,
                                                                                output_node=output_node_data,

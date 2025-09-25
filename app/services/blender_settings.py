@@ -8,7 +8,7 @@ class BlenderSettings:
 
     @staticmethod
     def generate_lighting_script(master_file:str, animation_file: str, collection_list: list, camera_collection: str,
-                        character_collection: str, start_frame: int, end_frame: int, output_path: str,
+                        character_collection: str, start_frame: int, end_frame: int, output_path: str, output_path_progress: str,
                         scene_name: str, crypto_node: str, output_node: list) -> str:
         tpl = Template(dedent("""
             import bpy
@@ -131,29 +131,47 @@ class BlenderSettings:
                 if cam_names:
                     cam_name = cam_names[0]
             
-                    existing = bpy.data.collections.get(cam_name)
-                    if existing and not existing.library:
-                        if cam_name not in bpy.context.scene.collection.children.keys():
-                            bpy.context.scene.collection.children.link(existing)
-                        print(f"[CAM] Reused existing local '{existing.name}' at scene root")
-                    else:
-                        with bpy.data.libraries.load("$ANIMATION_FILE", link=False) as (data_from, data_to):
-                            if cam_name in data_from.collections:
-                                data_to.collections = [cam_name]
-                            else:
-                                print(f"[WARNING] '{cam_name}' missing in library during append")
-                                return
+                    for c in [c for c in list(bpy.data.collections) if c.name == cam_name or c.name.startswith(cam_name + ".")]:
+                        for scene in bpy.data.scenes:
+                            _unlink_collection_from(scene.collection, c)
+                        try:
+                            bpy.data.collections.remove(c)
+                        except RuntimeError:
+                            pass
+                    try:
+                        bpy.data.orphans_purge(do_recursive=True)
+                    except Exception:
+                        pass
             
-                        appended = next((c for c in bpy.data.collections
-                                         if c.name.startswith(cam_name) and not c.library), None)
-                        if not appended:
-                            print(f"[WARNING] Failed to append '{cam_name}'")
+                    with bpy.data.libraries.load("$ANIMATION_FILE", link=False) as (data_from, data_to):
+                        if cam_name in data_from.collections:
+                            data_to.collections = [cam_name]
+                        else:
+                            print(f"[WARNING] '{cam_name}' missing in library during append")
                             return
             
-                        if appended.name not in bpy.context.scene.collection.children.keys():
-                            bpy.context.scene.collection.children.link(appended)
+                    appended = next((c for c in bpy.data.collections if
+                                     not c.library and (c.name == cam_name or c.name.startswith(cam_name + "."))), None)
+                    if not appended:
+                        print(f"[WARNING] Failed to append '{cam_name}'")
+                        return
             
-                        print(f"[CAM] Appended '{cam_name}' as local '{appended.name}' to scene root")
+                    other = bpy.data.collections.get(cam_name)
+                    if other and other is not appended:
+                        try:
+                            bpy.data.collections.remove(other)
+                        except RuntimeError:
+                            pass
+                    if appended.name != cam_name:
+                        try:
+                            appended.name = cam_name
+                        except Exception:
+                            pass
+            
+                    if appended.name not in bpy.context.scene.collection.children.keys():
+                        bpy.context.scene.collection.children.link(appended)
+            
+                    print(f"[CAM] Appended '{cam_name}' as local '{appended.name}' to scene root")
             
             
             def update_camera():
@@ -229,10 +247,12 @@ class BlenderSettings:
             
             # Save the modified Blender file
             bpy.ops.wm.save_as_mainfile(filepath="$OUTPUT_PATH")
-            print("File saved as: $OUTPUT_PATH")
+            bpy.ops.wm.save_as_mainfile(filepath="$OUTPUT_PATH_PROGRESS")
+            print("File saved as: $OUTPUT_PATH and $OUTPUT_PATH_PROGRESS")
             
             # Quit Blender
             bpy.ops.wm.quit_blender()
+
         """))
 
         script = tpl.substitute(
@@ -244,6 +264,7 @@ class BlenderSettings:
             START_FRAME=start_frame,
             END_FRAME=end_frame,
             OUTPUT_PATH=output_path,
+            OUTPUT_PATH_PROGRESS=output_path_progress,
             SCENE_NAME=scene_name,
             CRYPTO_NODE=crypto_node,
             OUTPUT_NODES=output_node,
