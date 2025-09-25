@@ -118,29 +118,47 @@ def link_animation():
     if cam_names:
         cam_name = cam_names[0]
 
-        existing = bpy.data.collections.get(cam_name)
-        if existing and not existing.library:
-            if cam_name not in bpy.context.scene.collection.children.keys():
-                bpy.context.scene.collection.children.link(existing)
-            print(f"[CAM] Reused existing local '{existing.name}' at scene root")
-        else:
-            with bpy.data.libraries.load("$ANIMATION_FILE", link=False) as (data_from, data_to):
-                if cam_name in data_from.collections:
-                    data_to.collections = [cam_name]
-                else:
-                    print(f"[WARNING] '{cam_name}' missing in library during append")
-                    return
+        for c in [c for c in list(bpy.data.collections) if c.name == cam_name or c.name.startswith(cam_name + ".")]:
+            for scene in bpy.data.scenes:
+                _unlink_collection_from(scene.collection, c)
+            try:
+                bpy.data.collections.remove(c)
+            except RuntimeError:
+                pass
+        try:
+            bpy.data.orphans_purge(do_recursive=True)
+        except Exception:
+            pass
 
-            appended = next((c for c in bpy.data.collections
-                             if c.name.startswith(cam_name) and not c.library), None)
-            if not appended:
-                print(f"[WARNING] Failed to append '{cam_name}'")
+        with bpy.data.libraries.load("$ANIMATION_FILE", link=False) as (data_from, data_to):
+            if cam_name in data_from.collections:
+                data_to.collections = [cam_name]
+            else:
+                print(f"[WARNING] '{cam_name}' missing in library during append")
                 return
 
-            if appended.name not in bpy.context.scene.collection.children.keys():
-                bpy.context.scene.collection.children.link(appended)
+        appended = next((c for c in bpy.data.collections if
+                         not c.library and (c.name == cam_name or c.name.startswith(cam_name + "."))), None)
+        if not appended:
+            print(f"[WARNING] Failed to append '{cam_name}'")
+            return
 
-            print(f"[CAM] Appended '{cam_name}' as local '{appended.name}' to scene root")
+        other = bpy.data.collections.get(cam_name)
+        if other and other is not appended:
+            try:
+                bpy.data.collections.remove(other)
+            except RuntimeError:
+                pass
+        if appended.name != cam_name:
+            try:
+                appended.name = cam_name
+            except Exception:
+                pass
+
+        if appended.name not in bpy.context.scene.collection.children.keys():
+            bpy.context.scene.collection.children.link(appended)
+
+        print(f"[CAM] Appended '{cam_name}' as local '{appended.name}' to scene root")
 
 
 def update_camera():
