@@ -64,70 +64,93 @@ def link_animation():
             continue
         parents[name] = ensure_parent_in_scene(name)
 
+    desired = {}
+
     with bpy.data.libraries.load("$ANIMATION_FILE", link=True) as (data_from, data_to):
-        desired = {}
         for parent_name, prefix in $COLLECTION_LIST:
             if prefix is None:
-                # Special case: CAM → link exact 'CAM' if present
                 if "$CAMERA_COLLECTION" in data_from.collections:
                     desired[parent_name] = ["$CAMERA_COLLECTION"]
-                    data_to.collections.append("$CAMERA_COLLECTION")
                 else:
                     desired[parent_name] = []
-                    print("[WARNING] '$CAMERA_COLLECTION' collection not found in library")
+                    print("[WARNING] '$CAMERA_COLLECTION' not found in library")
             else:
-                # Prefix case
                 names = [n for n in data_from.collections if n.startswith(prefix)]
                 desired[parent_name] = names
-                for n in names:
-                    data_to.collections.append(n)
+
+    to_link = []
+    for parent_name, names in desired.items():
+        if parent_name == "$CAMERA_COLLECTION":
+            continue
+        to_link.extend(names)
+
+    to_link = [n for n in to_link if n not in bpy.data.collections]
+
+    if to_link:
+        with bpy.data.libraries.load("$ANIMATION_FILE", link=True) as (data_from, data_to):
+            data_to.collections = [n for n in to_link if n in data_from.collections]
 
     for parent_name, child_names in desired.items():
         if parent_name == "$CAMERA_COLLECTION":
-            # Just link CAM directly into the scene root
-            for cname in child_names:
-                coll = bpy.data.collections.get(cname)
-                if coll and cname not in bpy.context.scene.collection.children.keys():
-                    bpy.context.scene.collection.children.link(coll)
-                    print(f"Linked '{cname}' directly into the scene")
+            continue
+        parent = parents[parent_name]
+        for cname in child_names:
+            col = bpy.data.collections.get(cname)
+            if not col:
+                print(f"[WARNING] Expected linked collection missing: {cname}")
+                continue
+
+            if not (col.library and bpy.path.abspath(col.library.filepath) == bpy.path.abspath("$ANIMATION_FILE")):
+                col = next((c for c in bpy.data.collections
+                            if c.name == cname and c.library and
+                            bpy.path.abspath(c.library.filepath) == bpy.path.abspath("$ANIMATION_FILE")), None)
+                if not col:
+                    print(f"[WARNING] No valid linked collection found for: {cname}")
+                    continue
+
+            if cname not in parent.children.keys():
+                parent.children.link(col)
+                print(f"Linked '{cname}' under '{parent_name}'")
+            else:
+                pass
+
+    cam_names = desired.get("$CAMERA_COLLECTION", [])
+    if cam_names:
+        cam_name = cam_names[0]
+
+        existing = bpy.data.collections.get(cam_name)
+        if existing and not existing.library:
+            if cam_name not in bpy.context.scene.collection.children.keys():
+                bpy.context.scene.collection.children.link(existing)
+            print(f"[CAM] Reused existing local '{existing.name}' at scene root")
         else:
-            # Normal parent bucket case
-            parent = parents[parent_name]
-
-            for cname in child_names:
-                # Try to find the collection by name
-                col = bpy.data.collections.get(cname)
-                if not col:
-                    print(f"[WARNING] Expected linked collection missing: {cname}")
-                    continue
-
-                # Ensure it's from the right library
-                if not (col.library and col.library.filepath == "$ANIMATION_FILE"):
-                    col = next(
-                        (c for c in bpy.data.collections
-                         if c.name == cname and c.library and c.library.filepath == "$ANIMATION_FILE"),
-                        None
-                    )
-
-                if not col:
-                    print(f"[WARNING] No valid collection found for: {cname}")
-                    continue
-
-                print(f"CHILD: {col.library.filepath}")
-
-                if cname not in parent.children.keys():
-                    parent.children.link(col)
-                    print(f"Added '{cname}' under '{parent_name}'")
+            with bpy.data.libraries.load("$ANIMATION_FILE", link=False) as (data_from, data_to):
+                if cam_name in data_from.collections:
+                    data_to.collections = [cam_name]
                 else:
-                    print(f"'{cname}' already under '{parent_name}'")
+                    print(f"[WARNING] '{cam_name}' missing in library during append")
+                    return
+
+            appended = next((c for c in bpy.data.collections
+                             if c.name.startswith(cam_name) and not c.library), None)
+            if not appended:
+                print(f"[WARNING] Failed to append '{cam_name}'")
+                return
+
+            if appended.name not in bpy.context.scene.collection.children.keys():
+                bpy.context.scene.collection.children.link(appended)
+
+            print(f"[CAM] Appended '{cam_name}' as local '{appended.name}' to scene root")
 
 
 def update_camera():
     # Update camera settings
-    active_camera = bpy.context.scene.camera
+    active_camera = bpy.data.cameras["Dolly_Camera"]
     if active_camera:
-        active_camera.data.dof.use_dof = False
-        active_camera.data.clip_end = 1000
+        active_camera.clip_end = 1000
+        active_camera.dof.use_dof = True
+        active_camera.dof.driver_remove("aperture_fstop")
+        active_camera.dof.driver_remove("focus_distance")
         print(f"Camera '{active_camera.name}' settings updated: DOF disabled, clip_end set to 1000")
     else:
         print("No active camera found in the scene.")
