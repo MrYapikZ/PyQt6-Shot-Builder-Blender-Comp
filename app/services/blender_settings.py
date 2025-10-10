@@ -9,7 +9,7 @@ class BlenderSettings:
     @staticmethod
     def generate_lighting_script(master_file:str, animation_file: str, collection_list: list, camera_collection: str,
                         character_collection: str, start_frame: int, end_frame: int, output_path: str, output_path_progress: str,
-                        scene_name: str, crypto_node: str, output_node: list) -> str:
+                        scene_name: str, crypto_node: str, output_node: list, method: bool) -> str:
         tpl = Template(dedent("""
             import bpy
 
@@ -143,7 +143,7 @@ class BlenderSettings:
                     except Exception:
                         pass
             
-                    with bpy.data.libraries.load("$ANIMATION_FILE", link=False) as (data_from, data_to):
+                    with bpy.data.libraries.load("$ANIMATION_FILE", link=$METHOD) as (data_from, data_to):
                         if cam_name in data_from.collections:
                             data_to.collections = [cam_name]
                         else:
@@ -277,6 +277,7 @@ class BlenderSettings:
             SCENE_NAME=scene_name,
             CRYPTO_NODE=crypto_node,
             OUTPUT_NODES=output_node,
+            METHOD=method
         )
 
         return script

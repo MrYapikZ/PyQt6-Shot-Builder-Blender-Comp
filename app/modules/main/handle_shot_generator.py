@@ -88,6 +88,15 @@ class ShotGeneratorHandler(QWidget):
             QMessageBox.warning(self, "Error", "No project selected")
             return
 
+        # Get radio button
+        if self.ui.radioButton_methodLink.isChecked():
+            link = True
+        elif self.ui.radioButton_methodAppend.isChecked():
+            link = False
+        else:
+            QMessageBox.warning(self, "Error", "No method selected")
+            return
+
         # Get project path
         project_production_path = FileManager().get_project_path(project_data[0])
         project_output_path = FileManager().get_project_path(project_data[-1])
@@ -189,6 +198,7 @@ class ShotGeneratorHandler(QWidget):
                                                                                scene_name=scene_name,
                                                                                crypto_node=cryptomatte_node,
                                                                                output_node=output_node_data,
+                                                                               method=link
                                                                                )
 
                     execute_blender = ExecuteProgram().blender_execute(blender_path=blender_executable,
