@@ -114,6 +114,7 @@ def link_animation():
             else:
                 pass
 
+    link_mode = bool($METHOD)
     cam_names = desired.get("$CAMERA_COLLECTION", [])
     if cam_names:
         cam_name = cam_names[0]
@@ -125,40 +126,45 @@ def link_animation():
                 bpy.data.collections.remove(c)
             except RuntimeError:
                 pass
+
         try:
             bpy.data.orphans_purge(do_recursive=True)
         except Exception:
             pass
 
-        with bpy.data.libraries.load("$ANIMATION_FILE", link=False) as (data_from, data_to):
+        with bpy.data.libraries.load("$ANIMATION_FILE", link=link_mode) as (data_from, data_to):
             if cam_name in data_from.collections:
                 data_to.collections = [cam_name]
             else:
-                print(f"[WARNING] '{cam_name}' missing in library during append")
+                print(f"[WARNING] '{cam_name}' missing in library during {'link' if link_mode else 'append'}")
                 return
 
-        appended = next((c for c in bpy.data.collections if
-                         not c.library and (c.name == cam_name or c.name.startswith(cam_name + "."))), None)
-        if not appended:
-            print(f"[WARNING] Failed to append '{cam_name}'")
+        found = next((c for c in bpy.data.collections
+                      if (c.name == cam_name or c.name.startswith(cam_name + "."))
+                      and ((link_mode and c.library) or (not link_mode and not c.library))), None)
+
+        if not found:
+            print(f"[WARNING] Failed to {'link' if link_mode else 'append'} '{cam_name}'")
             return
 
-        other = bpy.data.collections.get(cam_name)
-        if other and other is not appended:
-            try:
-                bpy.data.collections.remove(other)
-            except RuntimeError:
-                pass
-        if appended.name != cam_name:
-            try:
-                appended.name = cam_name
-            except Exception:
-                pass
+        if not link_mode:
+            other = bpy.data.collections.get(cam_name)
+            if other and other is not found:
+                try:
+                    bpy.data.collections.remove(other)
+                except RuntimeError:
+                    pass
+            if found.name != cam_name:
+                try:
+                    found.name = cam_name
+                except Exception:
+                    pass
 
-        if appended.name not in bpy.context.scene.collection.children.keys():
-            bpy.context.scene.collection.children.link(appended)
+        if found.name not in bpy.context.scene.collection.children.keys():
+            bpy.context.scene.collection.children.link(found)
 
-        print(f"[CAM] Appended '{cam_name}' as local '{appended.name}' to scene root")
+        print(f"[CAM] {'Linked' if link_mode else 'Appended'} '{cam_name}' as "
+              f"{'library' if link_mode else 'local'} collection '{found.name}'")
 
 
 def update_camera():
