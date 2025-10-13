@@ -102,6 +102,13 @@
          </property>
         </widget>
        </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_method">
+         <property name="text">
+          <string>Method</string>
+         </property>
+        </widget>
+       </item>
        <item row="1" column="0">
         <widget class="QRadioButton" name="radioButton_methodAppend">
          <property name="text">
@@ -109,10 +116,71 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="label_method">
+       <item row="2" column="0" colspan="2">
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Orientation::Vertical</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Policy::Preferred</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
+     <item row="2" column="1">
+      <layout class="QGridLayout" name="gridLayout_lighting">
+       <item row="3" column="0">
+        <widget class="QLineEdit" name="lineEdit_lightingPresetJson">
          <property name="text">
-          <string>Method</string>
+          <string/>
+         </property>
+         <property name="placeholderText">
+          <string>JSON preset</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QCheckBox" name="checkBox_lightingApply">
+         <property name="text">
+          <string>Apply</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QToolButton" name="toolButton_lightingPresetJson">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Locate</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0" colspan="3">
+        <widget class="QLabel" name="label_lighting">
+         <property name="text">
+          <string>Lighting</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLineEdit" name="lineEdit_lightingPresetBlend">
+         <property name="placeholderText">
+          <string>blend preset</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QToolButton" name="toolButton_lightingPresetBlend">
+         <property name="text">
+          <string>Locate</string>
          </property>
         </widget>
        </item>
