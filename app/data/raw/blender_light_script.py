@@ -4,10 +4,10 @@ import mathutils
 import os
 import json
 
-JSON_PRESET_FILEPATH = $JSON_PRESETS_FILEPATH
-BLEND_PRESETS_FILEPATH = $BLEND_PRESETS_FILEPATH
-CHARACTER_COLLECTION = $CHARACTER_COLLECTION
-LIGHTING_PROPS_KEY = $LIGHTING_PROPS_KEY
+JSON_PRESET_FILEPATH = "$JSON_PRESETS_FILEPATH"
+BLEND_PRESETS_FILEPATH = "$BLEND_PRESETS_FILEPATH"
+CHARACTER_COLLECTION = "$CHARACTER_COLLECTION"
+LIGHTING_PROPS_KEY = "$LIGHTING_PROPS_KEY"
 
 # Open master file
 bpy.ops.wm.open_mainfile(filepath="$FILEPATH")
@@ -264,10 +264,10 @@ def unique_collection_name(base: str) -> str | None:
 
 def object_name_with_suffix(name: str, suffix: str) -> str:
     wanted_tail = f"_{suffix}"
-    if name.endswith(wanted_tail) or re.search(rf"_{re.escape(suffix)}\.\d{{3}}$", name):
+    if name.endswith(wanted_tail) or re.search(rf"_{re.escape(suffix)}\.\d{{3}}$$", name):
         return name
 
-    m = re.match(r"^(.*?)(\.\d{3})$", name)
+    m = re.match(r"^(.*?)(\.\d{3})$$", name)
     if m:
         core, num = m.groups()
         return f"{core}{wanted_tail}{num}"
