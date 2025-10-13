@@ -4,7 +4,7 @@ from app.services.execute_program import ExecuteProgram
 from app.ui.shot_generator_widget_ui import Ui_Form
 from app.data.project import project_list, division_list
 from app.data.blender_config import collection_list, camera_collection_name, scene_name, cryptomatte_node, \
-    character_collection_name, output_node
+    character_collection_name, output_node, lighting_plugin_key
 from app.services.csv_manager import CSVManager
 from app.services.file_manager import FileManager
 from app.services.blender_settings import BlenderSettings
@@ -30,6 +30,11 @@ class ShotGeneratorHandler(QWidget):
         self.ui.pushButton_listControl_remove.clicked.connect(self.on_move_selected_item)
         self.ui.pushButton_generate.clicked.connect(self.on_generate)
         self.ui.pushButton_generate_clear.clicked.connect(self.on_clear)
+        self.ui.lineEdit_lightingPresetBlend.setEnabled(False)
+        self.ui.lineEdit_lightingPresetJson.setEnabled(False)
+        self.ui.toolButton_lightingPresetBlend.setEnabled(False)
+        self.ui.toolButton_lightingPresetJson.setEnabled(False)
+        self.ui.checkBox_lightingApply.clicked.connect(self.on_lighting_preset_toggle)
 
         self.csv_data = None
 
@@ -82,10 +87,31 @@ class ShotGeneratorHandler(QWidget):
             self.ui.listWidget_available.addItem(item.text())
             self.ui.listWidget_selected.takeItem(self.ui.listWidget_selected.row(item))
 
+    def on_lighting_preset_toggle(self):
+        if self.ui.checkBox_lightingApply.isChecked():
+            self.ui.lineEdit_lightingPresetBlend.setEnabled(True)
+            self.ui.lineEdit_lightingPresetJson.setEnabled(True)
+            self.ui.toolButton_lightingPresetBlend.setEnabled(True)
+            self.ui.toolButton_lightingPresetJson.setEnabled(True)
+        else:
+            self.ui.lineEdit_lightingPresetBlend.setEnabled(False)
+            self.ui.lineEdit_lightingPresetJson.setEnabled(False)
+            self.ui.toolButton_lightingPresetBlend.setEnabled(False)
+            self.ui.toolButton_lightingPresetJson.setEnabled(False)
+
     def on_generate(self):
         project_data = next((p for p in project_list if p[1] == self.ui.comboBox_project.currentText()), None)
         if not project_data:
             QMessageBox.warning(self, "Error", "No project selected")
+            return
+
+        # Get radio button
+        if self.ui.radioButton_methodLink.isChecked():
+            link = True
+        elif self.ui.radioButton_methodAppend.isChecked():
+            link = False
+        else:
+            QMessageBox.warning(self, "Error", "No method selected")
             return
 
         # Get project path
@@ -177,22 +203,47 @@ class ShotGeneratorHandler(QWidget):
                     output_node_data.append((output_node[0], comp_path, comp_filename))
                     output_node_data.append((output_node[1], preview_path, preview_filename))
 
-                    lighting_script = BlenderSettings.generate_lighting_script(master_file=str(mastershot_path),
-                                                                               animation_file=str(animation_file),
-                                                                               collection_list=collection_list,
-                                                                               camera_collection=camera_collection_name,
-                                                                               character_collection=character_collection_name,
-                                                                               start_frame=start_frame,
-                                                                               end_frame=end_frame,
-                                                                               output_path=str(lighting_file),
-                                                                               output_path_progress=str(lighting_progress_file),
-                                                                               scene_name=scene_name,
-                                                                               crypto_node=cryptomatte_node,
-                                                                               output_node=output_node_data,
-                                                                               )
+                    lighting_script = BlenderSettings.generate_lighting_script(
+                        master_file=str(mastershot_path),
+                        animation_file=str(animation_file),
+                        collection_list=collection_list,
+                        camera_collection=camera_collection_name,
+                        character_collection=character_collection_name,
+                        start_frame=start_frame,
+                        end_frame=end_frame,
+                        output_path=str(lighting_file),
+                        output_path_progress=str(lighting_progress_file),
+                        scene_name=scene_name,
+                        crypto_node=cryptomatte_node,
+                        output_node=output_node_data,
+                        method=link
+                    )
 
-                    execute_blender = ExecuteProgram().blender_execute(blender_path=blender_executable,
-                                                                       script=lighting_script)
+                    lighting_script_with_preset = BlenderSettings.generate_lighting_with_light_script(
+                        master_file=str(mastershot_path),
+                        animation_file=str(animation_file),
+                        collection_list=collection_list,
+                        camera_collection=camera_collection_name,
+                        character_collection=character_collection_name,
+                        start_frame=start_frame,
+                        end_frame=end_frame,
+                        output_path=str(lighting_file),
+                        output_path_progress=str(lighting_progress_file),
+                        scene_name=scene_name,
+                        crypto_node=cryptomatte_node,
+                        output_node=output_node_data,
+                        method=link,
+                        blend_preset_filepath=str(self.ui.lineEdit_lightingPresetBlend.text()),
+                        json_preset_filepath=str(self.ui.lineEdit_lightingPresetJson.text()),
+                        lighting_plugin_key=lighting_plugin_key
+                    )
+
+                    if self.ui.checkBox_lightingApply.isChecked():
+                        execute_blender = ExecuteProgram().blender_execute(blender_path=blender_executable,
+                                                                           script=lighting_script_with_preset)
+                    else:
+                        execute_blender = ExecuteProgram().blender_execute(blender_path=blender_executable,
+                                                                           script=lighting_script)
 
                     if execute_blender:
                         print(f"Blender process for {shot_file} completed successfully.")

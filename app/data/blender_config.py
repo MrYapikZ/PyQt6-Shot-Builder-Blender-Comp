@@ -11,3 +11,4 @@ collection_list = [
 scene_name = 'Scene'
 cryptomatte_node = 'Cryptomatte'
 output_node = ['File Output Comp', 'File Output Preview']
+lighting_plugin_key = 'blp'
