@@ -44,13 +44,18 @@ class ShotGeneratorHandler(QWidget):
         self.ui.checkBox_lightingApply.clicked.connect(self.on_lighting_preset_toggle)
         self.ui.lineEdit_lightingPresetBlend.setText(
             "/mnt/J/03_post_production/01_lighting/preset_lighting/lighting_setup/lighting_setup.blend")
+        self.ui.pushButton_loadConfig.clicked.connect(lambda: self.on_select_file("load_config", "Load Config File"))
+        self.ui.pushButton_saveConfig.clicked.connect(lambda: self.on_select_file("save_config", "Save Config File"))
 
         self.csv_data = None
 
         self.on_load()
 
-    def on_load(self):
-        data = JSONManager.read_json(Config.CONFIG_PATH)
+    def on_load(self, file_path: str = None):
+        print("Loading…")
+        if file_path is None:
+            file_path = Config.CONFIG_PATH
+        data = JSONManager.read_json(file_path)
         if 'shot_generator' in data:
             sg_data = data['shot_generator']
             self.ui.lineEdit_csv.setText(sg_data.get('csv_path', ''))
@@ -72,8 +77,10 @@ class ShotGeneratorHandler(QWidget):
             self.ui.lineEdit_lightingPresetJson.setText(sg_data.get('lighting_preset_json', ''))
             self.on_lighting_preset_toggle()  # Update UI based on checkbox state
 
-    def on_save(self):
+    def on_save(self, file_path: str = None):
         print("Saving…")
+        if file_path is None:
+            file_path = Config.CONFIG_PATH
         data = {}
         data['shot_generator'] = {
             'csv_path': self.ui.lineEdit_csv.text(),
@@ -86,7 +93,7 @@ class ShotGeneratorHandler(QWidget):
             'lighting_preset_blend': self.ui.lineEdit_lightingPresetBlend.text(),
             'lighting_preset_json': self.ui.lineEdit_lightingPresetJson.text(),
         }
-        JSONManager.write_json(Config.CONFIG_PATH, data)
+        JSONManager.write_json(file_path, data)
 
     def on_scan_files(self):
         project_data = next((p for p in project_list if p[1] == self.ui.comboBox_project.currentText()), None)
@@ -130,6 +137,10 @@ class ShotGeneratorHandler(QWidget):
                 self.ui.lineEdit_lightingPresetBlend.setText(file_path)
             elif file_type == "lighting_json":
                 self.ui.lineEdit_lightingPresetJson.setText(file_path)
+            elif file_type == "save_config":
+                self.on_save(file_path)
+            elif file_type == "load_config":
+                self.on_load(file_path)
 
     def on_move_available_item(self):
         for item in self.ui.listWidget_available.selectedItems():
