@@ -197,4 +197,6 @@ class ApplyLightPresetHandler(QWidget):
     def on_clear(self):
         self.ui.listWidget_selected.clear()
         self.ui.listWidget_available.clear()
+        self.ui.lineEdit_availableSearch.clear()
+        self.ui.lineEdit_selectedSearch.clear()
         self.csv_data = None
