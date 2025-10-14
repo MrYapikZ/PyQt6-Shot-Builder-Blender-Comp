@@ -1,5 +1,7 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QMainWindow
+
+from app.modules.main.handle_apply_light_preset import ApplyLightPresetHandler
 from app.ui.main_widget_ui import Ui_MainWindow
 from app.modules.main.handle_shot_generator import ShotGeneratorHandler
 
@@ -9,9 +11,10 @@ class MainUI(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.setWindowTitle("Shot Builder Blend Comp")
-        self.ui.label_version.setText("v0.1.9")
+        self.ui.label_version.setText("v0.1.10 Beta")
 
         self.ui.tabWidget_main.addTab(ShotGeneratorHandler(), "Shot Generator")
+        self.ui.tabWidget_main.addTab(ApplyLightPresetHandler(), "Apply Light Preset")
         # Additional UI setup can be done here
 
 if __name__ == '__main__':

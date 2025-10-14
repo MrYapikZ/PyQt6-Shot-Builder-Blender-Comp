@@ -1,6 +1,8 @@
 from PyQt6.QtWidgets import QWidget, QFileDialog, QMessageBox, QAbstractItemView
 
+from app.config import Config
 from app.services.execute_program import ExecuteProgram
+from app.services.json_manager import JSONManager
 from app.ui.shot_generator_widget_ui import Ui_Form
 from app.data.project import project_list, division_list
 from app.data.blender_config import collection_list, camera_collection_name, scene_name, cryptomatte_node, \
@@ -15,6 +17,7 @@ class ShotGeneratorHandler(QWidget):
         super().__init__()
         self.ui = Ui_Form()
         self.ui.setupUi(self)
+
         self.ui.toolButton_csv.clicked.connect(lambda: self.on_select_file("csv", "Select CSV File"))
         self.ui.toolButton_blender.clicked.connect(lambda: self.on_select_file("blender", "Select Blender Program"))
         self.ui.pushButton_generate_scan.clicked.connect(self.on_scan_files)
@@ -34,9 +37,63 @@ class ShotGeneratorHandler(QWidget):
         self.ui.lineEdit_lightingPresetJson.setEnabled(False)
         self.ui.toolButton_lightingPresetBlend.setEnabled(False)
         self.ui.toolButton_lightingPresetJson.setEnabled(False)
+        self.ui.toolButton_lightingPresetBlend.clicked.connect(
+            lambda: self.on_select_file("lighting_blend", "Select Lighting Preset Blend File"))
+        self.ui.toolButton_lightingPresetJson.clicked.connect(
+            lambda: self.on_select_file("lighting_json", "Select Lighting Preset JSON File"))
         self.ui.checkBox_lightingApply.clicked.connect(self.on_lighting_preset_toggle)
+        self.ui.lineEdit_lightingPresetBlend.setText(
+            "/mnt/J/03_post_production/01_lighting/preset_lighting/lighting_setup/lighting_setup.blend")
+        self.ui.pushButton_loadConfig.clicked.connect(lambda: self.on_select_file("load_config", "Load Config File"))
+        self.ui.pushButton_saveConfig.clicked.connect(lambda: self.on_select_file("save_config", "Save Config File"))
 
         self.csv_data = None
+
+        self.on_load()
+
+    def on_load(self, file_path: str = None):
+        print("Loading…")
+        if file_path is None:
+            file_path = Config.CONFIG_PATH
+        data = JSONManager.read_json(file_path)
+        if 'shot_generator' in data:
+            sg_data = data['shot_generator']
+            self.ui.lineEdit_csv.setText(sg_data.get('csv_path', ''))
+            self.ui.lineEdit_blender.setText(sg_data.get('blender_path', ''))
+            self.ui.lineEdit_mastershot.setText(sg_data.get('mastershot_path', ''))
+            project = sg_data.get('project', '')
+            index = self.ui.comboBox_project.findText(project)
+            if index != -1:
+                self.ui.comboBox_project.setCurrentIndex(index)
+            method_link = sg_data.get('method_link', True)
+            method_append = sg_data.get('method_append', False)
+            if method_link:
+                self.ui.radioButton_methodLink.setChecked(True)
+            elif method_append:
+                self.ui.radioButton_methodAppend.setChecked(True)
+            lighting_apply = sg_data.get('lighting_preset_apply', False)
+            self.ui.checkBox_lightingApply.setChecked(lighting_apply)
+            self.ui.lineEdit_lightingPresetBlend.setText(sg_data.get('lighting_preset_blend', ''))
+            self.ui.lineEdit_lightingPresetJson.setText(sg_data.get('lighting_preset_json', ''))
+            self.on_lighting_preset_toggle()  # Update UI based on checkbox state
+
+    def on_save(self, file_path: str = None):
+        print("Saving…")
+        if file_path is None:
+            file_path = Config.CONFIG_PATH
+        data = {}
+        data['shot_generator'] = {
+            'csv_path': self.ui.lineEdit_csv.text(),
+            'blender_path': self.ui.lineEdit_blender.text(),
+            'mastershot_path': self.ui.lineEdit_mastershot.text(),
+            'project': self.ui.comboBox_project.currentText(),
+            'method_link': self.ui.radioButton_methodLink.isChecked(),
+            'method_append': self.ui.radioButton_methodAppend.isChecked(),
+            'lighting_preset_apply': self.ui.checkBox_lightingApply.isChecked(),
+            'lighting_preset_blend': self.ui.lineEdit_lightingPresetBlend.text(),
+            'lighting_preset_json': self.ui.lineEdit_lightingPresetJson.text(),
+        }
+        JSONManager.write_json(file_path, data)
 
     def on_scan_files(self):
         project_data = next((p for p in project_list if p[1] == self.ui.comboBox_project.currentText()), None)
@@ -76,6 +133,14 @@ class ShotGeneratorHandler(QWidget):
                 self.ui.lineEdit_blender.setText(file_path)
             elif file_type == "mastershot":
                 self.ui.lineEdit_mastershot.setText(file_path)
+            elif file_type == "lighting_blend":
+                self.ui.lineEdit_lightingPresetBlend.setText(file_path)
+            elif file_type == "lighting_json":
+                self.ui.lineEdit_lightingPresetJson.setText(file_path)
+            elif file_type == "save_config":
+                self.on_save(file_path)
+            elif file_type == "load_config":
+                self.on_load(file_path)
 
     def on_move_available_item(self):
         for item in self.ui.listWidget_available.selectedItems():
@@ -256,4 +321,9 @@ class ShotGeneratorHandler(QWidget):
     def on_clear(self):
         self.ui.listWidget_selected.clear()
         self.ui.listWidget_available.clear()
-        self.csv_data.clear()
+        self.csv_data = None
+
+    def closeEvent(self, event):
+        # This method is called when the window is closed
+        self.on_save()
+        event.accept()

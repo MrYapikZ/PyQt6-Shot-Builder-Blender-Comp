@@ -16,20 +16,6 @@
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
     <layout class="QGridLayout" name="gridLayout_data">
-     <item row="1" column="0">
-      <layout class="QGridLayout" name="gridLayout_project">
-       <item row="0" column="0" colspan="2">
-        <widget class="QLabel" name="label_project">
-         <property name="text">
-          <string>Project</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0" colspan="2">
-        <widget class="QComboBox" name="comboBox_project"/>
-       </item>
-      </layout>
-     </item>
      <item row="0" column="1">
       <layout class="QGridLayout" name="gridLayout_csv">
        <item row="1" column="0">
@@ -51,22 +37,26 @@
        </item>
       </layout>
      </item>
-     <item row="0" column="0">
-      <layout class="QGridLayout" name="gridLayout_blender">
-       <item row="1" column="0">
-        <widget class="QLineEdit" name="lineEdit_blender"/>
-       </item>
-       <item row="1" column="1">
-        <widget class="QToolButton" name="toolButton_blender">
+     <item row="2" column="0">
+      <layout class="QGridLayout" name="gridLayout_method">
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_method">
          <property name="text">
-          <string>Locate</string>
+          <string>Method</string>
          </property>
         </widget>
        </item>
-       <item row="0" column="0" colspan="2">
-        <widget class="QLabel" name="label_blender">
+       <item row="1" column="1">
+        <widget class="QRadioButton" name="radioButton_methodLink">
          <property name="text">
-          <string>Blender</string>
+          <string>Link</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QRadioButton" name="radioButton_methodAppend">
+         <property name="text">
+          <string>Append</string>
          </property>
         </widget>
        </item>
@@ -93,48 +83,60 @@
        </item>
       </layout>
      </item>
-     <item row="2" column="0">
-      <layout class="QGridLayout" name="gridLayout_method">
-       <item row="1" column="1">
-        <widget class="QRadioButton" name="radioButton_methodLink">
+     <item row="1" column="0">
+      <layout class="QGridLayout" name="gridLayout_project">
+       <item row="0" column="0" colspan="2">
+        <widget class="QLabel" name="label_project">
          <property name="text">
-          <string>Link</string>
+          <string>Project</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0" colspan="2">
+        <widget class="QComboBox" name="comboBox_project"/>
+       </item>
+      </layout>
+     </item>
+     <item row="0" column="0">
+      <layout class="QGridLayout" name="gridLayout_blender">
+       <item row="1" column="0">
+        <widget class="QLineEdit" name="lineEdit_blender"/>
+       </item>
+       <item row="1" column="1">
+        <widget class="QToolButton" name="toolButton_blender">
+         <property name="text">
+          <string>Locate</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0" colspan="2">
+        <widget class="QLabel" name="label_blender">
+         <property name="text">
+          <string>Blender</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="3" column="0">
+      <layout class="QGridLayout" name="gridLayout_config">
+       <item row="1" column="0">
+        <widget class="QPushButton" name="pushButton_saveConfig">
+         <property name="text">
+          <string>Save Config</string>
          </property>
         </widget>
        </item>
        <item row="0" column="0">
-        <widget class="QLabel" name="label_method">
+        <widget class="QPushButton" name="pushButton_loadConfig">
          <property name="text">
-          <string>Method</string>
+          <string>Load Config</string>
          </property>
         </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QRadioButton" name="radioButton_methodAppend">
-         <property name="text">
-          <string>Append</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0" colspan="2">
-        <spacer name="verticalSpacer">
-         <property name="orientation">
-          <enum>Qt::Orientation::Vertical</enum>
-         </property>
-         <property name="sizeType">
-          <enum>QSizePolicy::Policy::Preferred</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
        </item>
       </layout>
      </item>
-     <item row="2" column="1">
+     <item row="2" column="1" rowspan="2">
       <layout class="QGridLayout" name="gridLayout_lighting">
        <item row="3" column="0">
         <widget class="QLineEdit" name="lineEdit_lightingPresetJson">
@@ -156,7 +158,7 @@
        <item row="3" column="1">
         <widget class="QToolButton" name="toolButton_lightingPresetJson">
          <property name="enabled">
-          <bool>false</bool>
+          <bool>true</bool>
          </property>
          <property name="text">
           <string>Locate</string>
