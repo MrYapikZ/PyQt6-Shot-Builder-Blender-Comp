@@ -25,6 +25,9 @@ class ApplyLightPresetHandler(QWidget):
         self.ui.pushButton_listControl_add.clicked.connect(self.on_move_available_item)
         self.ui.pushButton_listControl_remove.clicked.connect(self.on_move_selected_item)
 
+        self._wire_search_available()
+        self._wire_search_selected()
+
     def on_scan_files(self):
         project_data = next((p for p in project_list if p[1] == self.ui.comboBox_project.currentText()), None)
         if not project_data:
