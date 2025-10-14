@@ -35,6 +35,7 @@ class ShotGeneratorHandler(QWidget):
         self.ui.toolButton_lightingPresetBlend.setEnabled(False)
         self.ui.toolButton_lightingPresetJson.setEnabled(False)
         self.ui.checkBox_lightingApply.clicked.connect(self.on_lighting_preset_toggle)
+        self.ui.lineEdit_lightingPresetBlend.setText("/mnt/J/03_post_production/01_lighting/preset_lighting/lighting_setup/lighting_setup.blend")
 
         self.csv_data = None
 
