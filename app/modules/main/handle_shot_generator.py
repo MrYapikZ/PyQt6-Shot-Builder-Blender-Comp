@@ -321,7 +321,7 @@ class ShotGeneratorHandler(QWidget):
     def on_clear(self):
         self.ui.listWidget_selected.clear()
         self.ui.listWidget_available.clear()
-        self.csv_data.clear()
+        self.csv_data = None
 
     def closeEvent(self, event):
         # This method is called when the window is closed
