@@ -17,6 +17,7 @@ class ShotGeneratorHandler(QWidget):
         super().__init__()
         self.ui = Ui_Form()
         self.ui.setupUi(self)
+
         self.ui.toolButton_csv.clicked.connect(lambda: self.on_select_file("csv", "Select CSV File"))
         self.ui.toolButton_blender.clicked.connect(lambda: self.on_select_file("blender", "Select Blender Program"))
         self.ui.pushButton_generate_scan.clicked.connect(self.on_scan_files)
