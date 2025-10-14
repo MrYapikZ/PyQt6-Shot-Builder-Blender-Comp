@@ -36,6 +36,10 @@ class ShotGeneratorHandler(QWidget):
         self.ui.lineEdit_lightingPresetJson.setEnabled(False)
         self.ui.toolButton_lightingPresetBlend.setEnabled(False)
         self.ui.toolButton_lightingPresetJson.setEnabled(False)
+        self.ui.toolButton_lightingPresetBlend.clicked.connect(
+            lambda: self.on_select_file("lighting_blend", "Select Lighting Preset Blend File"))
+        self.ui.toolButton_lightingPresetJson.clicked.connect(
+            lambda: self.on_select_file("lighting_json", "Select Lighting Preset JSON File"))
         self.ui.checkBox_lightingApply.clicked.connect(self.on_lighting_preset_toggle)
         self.ui.lineEdit_lightingPresetBlend.setText(
             "/mnt/J/03_post_production/01_lighting/preset_lighting/lighting_setup/lighting_setup.blend")
@@ -121,6 +125,10 @@ class ShotGeneratorHandler(QWidget):
                 self.ui.lineEdit_blender.setText(file_path)
             elif file_type == "mastershot":
                 self.ui.lineEdit_mastershot.setText(file_path)
+            elif file_type == "lighting_blend":
+                self.ui.lineEdit_lightingPresetBlend.setText(file_path)
+            elif file_type == "lighting_json":
+                self.ui.lineEdit_lightingPresetJson.setText(file_path)
 
     def on_move_available_item(self):
         for item in self.ui.listWidget_available.selectedItems():
