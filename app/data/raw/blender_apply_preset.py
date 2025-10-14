@@ -1,11 +1,19 @@
 import bpy
 import re
 import mathutils
+import os
+import json
 
-BLEND_PRESETS_FILEPATH = $BLEND_PRESETS_FILEPATH
-CHARACTER_COLLECTION = $CHARACTER_COLLECTION
-LIGHTING_PROPS_KEY = $LIGHTING_PROPS_KEY
+JSON_PRESET_FILEPATH = "$JSON_PRESETS_FILEPATH"
+BLEND_PRESETS_FILEPATH = "$BLEND_PRESETS_FILEPATH"
+CHARACTER_COLLECTION = "$CHARACTER_COLLECTION"
+LIGHTING_PROPS_KEY = "$LIGHTING_PROPS_KEY"
 
+# Open master file
+bpy.ops.wm.open_mainfile(filepath="$FILEPATH")
+
+
+## APPEND LIGHT
 def ensure_root_child(parent_coll: bpy.types.Collection, child_coll: bpy.types.Collection):
     if child_coll.name in parent_coll.children.keys():
         return
@@ -21,10 +29,10 @@ def unique_collection_name(base: str) -> str | None:
 
 def object_name_with_suffix(name: str, suffix: str) -> str:
     wanted_tail = f"_{suffix}"
-    if name.endswith(wanted_tail) or re.search(rf"_{re.escape(suffix)}\.\d{{3}}$", name):
+    if name.endswith(wanted_tail) or re.search(rf"_{re.escape(suffix)}\.\d{{3}}$$", name):
         return name
 
-    m = re.match(r"^(.*?)(\.\d{3})$", name)
+    m = re.match(r"^(.*?)(\.\d{3})$$", name)
     if m:
         core, num = m.groups()
         return f"{core}{wanted_tail}{num}"
@@ -108,12 +116,18 @@ def find_light_root_candidate(coll: bpy.types.Collection, suffix: str):
     return None
 
 
-def ensure_child_of_to_c_traj(root_obj: bpy.types.Object, rig: bpy.types.Object) -> bool:
+def ensure_child_of_to_c_traj(root_obj: bpy.types.Object, rig: bpy.types.Object, is_napo: bool) -> bool:
     if rig is None or rig.type != 'ARMATURE':
         print("[WARNING] No valid rig (Armature) to constrain to.")
         return False
 
-    pb = rig.pose.bones.get("c_traj") if rig.pose else None
+    pb = None
+    if rig.pose:
+        if not is_napo:
+            pb = rig.pose.bones.get("c_traj") or rig.pose.bones.get("body")
+        else:
+            pb = rig.pose.bones.get("c_body")
+
     if pb is None:
         print("[WARNING] Rig has no pose bone named 'c_traj'.")
         return False
@@ -166,6 +180,23 @@ def add_active_collection_to_receiver(rcv: bpy.types.Collection, active_coll: bp
         rcv.children.link(active_coll)
         return True
     return False
+
+
+def delete_collection(coll: bpy.types.Collection):
+    if coll:
+        for scene in bpy.data.scenes:
+            if coll.name in scene.collection.children:
+                scene.collection.children.unlink(coll)
+        for parent in bpy.data.collections:
+            if coll.name in parent.children:
+                parent.children.unlink(coll)
+        for obj in list(coll.objects):
+            bpy.data.objects.remove(obj, do_unlink=True)
+
+        bpy.data.collections.remove(coll)
+        print(f"Deleted collection: {coll.name}")
+    else:
+        print(f"Collection '{coll.name}' not found.")
 
 
 def append_lighting_setup(presets_path: str, character_collection: str, key: str = "blp"):
@@ -257,18 +288,20 @@ def append_lighting_setup(presets_path: str, character_collection: str, key: str
             # Constrain light_root to rig.c_traj
             light_root = find_light_root_candidate(coll, suffix)
             if light_root and rig:
-                if ensure_child_of_to_c_traj(light_root, rig):
+                if ensure_child_of_to_c_traj(root_obj=light_root, rig=rig, is_napo=(sel_name == "c-napo")):
                     print(f"[INFO] Added Child Of (target: {rig.name}, bone: c_traj) to '{light_root.name}'.")
                 else:
                     print(f"[WARNING] Could not complete Child Of setup for '{light_root.name}'.")
+                    delete_collection(coll)
             else:
                 if not light_root:
                     print(f"[WARNING] No root light found in '{coll.name}'. Expected 'light_root_{suffix}'.")
                 if not rig:
                     print(f"[WARNING] No rig detected under active collection '{sel_name}'.")
+                delete_collection(coll)
 
             fill_light = find_named_light(coll, "l-fill", suffix)
-            rim_light  = find_named_light(coll, "l-rim",  suffix)
+            rim_light = find_named_light(coll, "l-rim", suffix)
 
             shared_rcv = ensure_shared_receiver_collection(f"LL_{suffix}")
             if not shared_rcv:
@@ -303,5 +336,127 @@ def append_lighting_setup(presets_path: str, character_collection: str, key: str
     print("[DONE] Append/Setup pass finished.")
 
 
-# Run immediately when executed in the Text Editor
+## APPLY PRESET
+def _json_load(filepath: str):
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"[ERROR] Failed to load preset from {filepath}: {e}")
+        return None
+
+
+def _coerce_color(value, default=(1.0, 1.0, 1.0)):
+    try:
+        c = tuple(float(x) for x in value)
+        return c[:3] if len(c) >= 3 else default
+    except Exception:
+        return default
+
+
+def _coerce_float(value, default=0.0):
+    try:
+        return float(value)
+    except Exception:
+        return default
+
+
+def _apply_light_item_to_object(light_obj: bpy.types.Object, item: dict):
+    light_data = getattr(light_obj, "data", None)
+    if not light_data:
+        return False
+
+    color = _coerce_color(item.get("color", (1.0, 1.0, 1.0)))
+    energy = _coerce_float(item.get("energy", 10.0))
+
+    try:
+        light_data.color = color
+    except Exception as e:
+        print(f"[WARNING] Could not set color for '{light_obj.name}': {e}")
+
+    try:
+        light_data.energy = energy
+    except Exception as e:
+        print(f"[WARNING] Could not set energy for '{light_obj.name}': {e}")
+
+    if hasattr(light_data, "exposure"):
+        try:
+            light_data.exposure = _coerce_float(item.get("exposure", 0.0))
+        except Exception as e:
+            print(f"[WARNING] Could not set exposure for '{light_obj.name}': {e}")
+
+    if hasattr(light_data, "shadow_jitter_overblur"):
+        try:
+            light_data.shadow_jitter_overblur = _coerce_float(item.get("shadow_jitter_overblur", 0.0))
+        except Exception as e:
+            print(f"[WARNING] Could not set shadow_jitter_overblur for '{light_obj.name}': {e}")
+
+    return True
+
+
+def import_lighting_preset(filepath: str | None = None):
+    path = filepath or JSON_PRESET_FILEPATH
+    if not path:
+        print("[ERROR] No filepath provided for importing preset.")
+        return
+    else:
+        path = bpy.path.abspath(path)
+
+    print(f"[INFO] Importing lighting preset from: {path}")
+    if not os.path.exists(path):
+        print(f"[ERROR] File does not exist: {path}")
+        return
+
+    data = _json_load(path)
+    if data is None:
+        print(f"[ERROR] Failed to load preset from {path}")
+        return
+
+    applied = 0
+    skipped = 0
+
+    for entry in data:
+        collection_name = entry.get("collection", "")
+        preset_items = entry.get("preset", [])
+        if not collection_name or not preset_items:
+            continue
+
+        collection = bpy.data.collections.get(collection_name)
+        if not collection:
+            print(f"[WARNING] Collection '{collection_name}' not found; skipping {len(preset_items)} item(s).")
+            skipped += len(preset_items)
+            continue
+
+        for item in preset_items:
+            light_name = item.get("name", "")
+            if not light_name:
+                skipped += 1
+                continue
+
+            light_obj = collection.objects.get(light_name)
+            if not light_obj:
+                light_obj = next((o for o in _all_objects_in_collection(collection) if o.name == light_name), None)
+
+            if not light_obj or light_obj.type != 'LIGHT' or getattr(light_obj, "data", None) is None:
+                skipped += 1
+                continue
+
+            if _apply_light_item_to_object(light_obj, item):
+                applied += 1
+            else:
+                skipped += 1
+
+    print(f"[DONE] Applied: {applied}  |  Skipped: {skipped}")
+
+
 append_lighting_setup(BLEND_PRESETS_FILEPATH, CHARACTER_COLLECTION, LIGHTING_PROPS_KEY)
+import_lighting_preset(JSON_PRESET_FILEPATH)
+print("All operations completed successfully.")
+
+# Save the modified Blender file
+bpy.ops.wm.save_as_mainfile(filepath="$OUTPUT_PATH")
+bpy.ops.wm.save_as_mainfile(filepath="$OUTPUT_PATH_PROGRESS")
+print("File saved as: $OUTPUT_PATH and $OUTPUT_PATH_PROGRESS")
+
+# Quit Blender
+bpy.ops.wm.quit_blender()

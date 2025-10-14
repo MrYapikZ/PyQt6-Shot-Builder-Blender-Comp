@@ -418,11 +418,7 @@ def add_active_collection_to_receiver(rcv: bpy.types.Collection, active_coll: bp
 
 
 def delete_collection(coll: bpy.types.Collection):
-    """Unlink and delete the given collection."""
-    # Unlink from all parents
-
     if coll:
-        # First unlink it from all scenes and parent collections
         for scene in bpy.data.scenes:
             if coll.name in scene.collection.children:
                 scene.collection.children.unlink(coll)
@@ -432,7 +428,6 @@ def delete_collection(coll: bpy.types.Collection):
         for obj in list(coll.objects):
             bpy.data.objects.remove(obj, do_unlink=True)
 
-        # Finally, remove it from bpy.data entirely
         bpy.data.collections.remove(coll)
         print(f"Deleted collection: {coll.name}")
     else:
