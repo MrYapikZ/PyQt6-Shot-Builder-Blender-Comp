@@ -24,9 +24,29 @@ class ApplyLightPresetHandler(QWidget):
         self.ui.listWidget_selected.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.ui.pushButton_listControl_add.clicked.connect(self.on_move_available_item)
         self.ui.pushButton_listControl_remove.clicked.connect(self.on_move_selected_item)
+        self.ui.toolButton_blender.clicked.connect(lambda: self.on_select_file("blender", "Select Blender Program"))
+        self.ui.toolButton_csv.clicked.connect(
+            lambda: self.on_select_file("csv", "Select CSV File"))
+        self.ui.toolButton_presetBlend.clicked.connect(
+            lambda: self.on_select_file("lighting_blend", "Select Lighting Preset Blend File"))
+        self.ui.toolButton_presetJson.clicked.connect(
+            lambda: self.on_select_file("lighting_json", "Select Lighting Preset JSON File"))
+        self.ui.pushButton_buttonClear.clicked.connect(self.on_clear)
 
         self._wire_search_available()
         self._wire_search_selected()
+
+    def on_select_file(self, file_type: str, message: str):
+        file_path, _ = QFileDialog.getOpenFileName(self, message, "", "All Files (*)")
+        if file_path:
+            if file_type == "csv":
+                self.ui.lineEdit_csv.setText(file_path)
+            elif file_type == "blender":
+                self.ui.lineEdit_blender.setText(file_path)
+            elif file_type == "lighting_blend":
+                self.ui.lineEdit_presetBlend.setText(file_path)
+            elif file_type == "lighting_json":
+                self.ui.lineEdit_presetJson.setText(file_path)
 
     def on_scan_files(self):
         project_data = next((p for p in project_list if p[1] == self.ui.comboBox_project.currentText()), None)
