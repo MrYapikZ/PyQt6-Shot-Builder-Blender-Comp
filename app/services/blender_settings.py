@@ -1,8 +1,6 @@
 from textwrap import dedent
 from string import Template
 
-from app.data.raw.blender_light_script import CHARACTER_COLLECTION
-
 
 class BlenderSettings:
     def __init__(self, blender_file: str):
