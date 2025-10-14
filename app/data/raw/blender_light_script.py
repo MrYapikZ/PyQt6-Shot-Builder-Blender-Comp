@@ -351,12 +351,18 @@ def find_light_root_candidate(coll: bpy.types.Collection, suffix: str):
     return None
 
 
-def ensure_child_of_to_c_traj(root_obj: bpy.types.Object, rig: bpy.types.Object) -> bool:
+def ensure_child_of_to_c_traj(root_obj: bpy.types.Object, rig: bpy.types.Object, is_napo: bool) -> bool:
     if rig is None or rig.type != 'ARMATURE':
         print("[WARNING] No valid rig (Armature) to constrain to.")
         return False
 
-    pb = rig.pose.bones.get("c_traj") if rig.pose else None
+    pb = None
+    if rig.pose:
+        if not is_napo:
+            pb = rig.pose.bones.get("c_traj") or rig.pose.bones.get("body")
+        else:
+            pb = rig.pose.bones.get("c_body")
+
     if pb is None:
         print("[WARNING] Rig has no pose bone named 'c_traj'.")
         return False
@@ -409,6 +415,28 @@ def add_active_collection_to_receiver(rcv: bpy.types.Collection, active_coll: bp
         rcv.children.link(active_coll)
         return True
     return False
+
+
+def delete_collection(coll: bpy.types.Collection):
+    """Unlink and delete the given collection."""
+    # Unlink from all parents
+
+    if coll:
+        # First unlink it from all scenes and parent collections
+        for scene in bpy.data.scenes:
+            if coll.name in scene.collection.children:
+                scene.collection.children.unlink(coll)
+        for parent in bpy.data.collections:
+            if coll.name in parent.children:
+                parent.children.unlink(coll)
+        for obj in list(coll.objects):
+            bpy.data.objects.remove(obj, do_unlink=True)
+
+        # Finally, remove it from bpy.data entirely
+        bpy.data.collections.remove(coll)
+        print(f"Deleted collection: {coll.name}")
+    else:
+        print(f"Collection '{coll.name}' not found.")
 
 
 def append_lighting_setup(presets_path: str, character_collection: str, key: str = "blp"):
@@ -500,15 +528,17 @@ def append_lighting_setup(presets_path: str, character_collection: str, key: str
             # Constrain light_root to rig.c_traj
             light_root = find_light_root_candidate(coll, suffix)
             if light_root and rig:
-                if ensure_child_of_to_c_traj(light_root, rig):
+                if ensure_child_of_to_c_traj(root_obj=light_root, rig=rig, is_napo=(sel_name == "c-napo")):
                     print(f"[INFO] Added Child Of (target: {rig.name}, bone: c_traj) to '{light_root.name}'.")
                 else:
                     print(f"[WARNING] Could not complete Child Of setup for '{light_root.name}'.")
+                    delete_collection(coll)
             else:
                 if not light_root:
                     print(f"[WARNING] No root light found in '{coll.name}'. Expected 'light_root_{suffix}'.")
                 if not rig:
                     print(f"[WARNING] No rig detected under active collection '{sel_name}'.")
+                delete_collection(coll)
 
             fill_light = find_named_light(coll, "l-fill", suffix)
             rim_light = find_named_light(coll, "l-rim", suffix)
@@ -547,10 +577,6 @@ def append_lighting_setup(presets_path: str, character_collection: str, key: str
 
 
 ## APPLY PRESET
-def _all_objects_in_collection(coll: bpy.types.Collection):
-    return getattr(coll, "all_objects", coll.objects)
-
-
 def _json_load(filepath: str):
     try:
         with open(filepath, "r", encoding="utf-8") as f:
