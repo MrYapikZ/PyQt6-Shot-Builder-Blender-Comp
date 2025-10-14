@@ -1,9 +1,12 @@
 from PyQt6.QtWidgets import QWidget, QFileDialog, QMessageBox, QAbstractItemView
 
+from app.services.blender_settings import BlenderSettings
+from app.services.execute_program import ExecuteProgram
 from app.ui.apply_light_preset_ui import Ui_Form
 from app.data.project import project_list, division_list
 from app.services.csv_manager import CSVManager
 from app.services.file_manager import FileManager
+from app.data.blender_config import character_collection_name, lighting_plugin_key
 
 
 class ApplyLightPresetHandler(QWidget):
@@ -125,8 +128,31 @@ class ApplyLightPresetHandler(QWidget):
                                                                      shot=shot)
                     lighting_file = FileManager().combine_paths(lighting_path, shot_file)
                     lighting_progress_dir = FileManager().combine_paths(lighting_path, "progress", mkdir=True)
+                    print(f"Lighting file path: {lighting_file}")
                     next_path, nextversion, next_filename = FileManager().get_latest_version(
                         progress_dir=str(lighting_progress_dir), shot_prefix=shot_file, ext=".blend")
+                    print(
+                        f"Next version path: {next_path}, next version: {nextversion}, next filename: {next_filename}")
+
+                    apply_preset_script = BlenderSettings.generate_apply_preset_script(
+                        master_file=str(shot_file),
+                        character_collection=character_collection_name,
+                        output_path=str(lighting_file),
+                        output_path_progress=str(next_path),
+                        blend_preset_filepath=str(self.ui.lineEdit_presetBlend.text()),
+                        json_preset_filepath=str(self.ui.lineEdit_presetJson.text()),
+                        lighting_plugin_key=lighting_plugin_key
+                    )
+
+                    execute_blender = ExecuteProgram().blender_execute(blender_path=str(blender_executable),
+                                                                       script=apply_preset_script)
+
+                    if execute_blender:
+                        print(f"Successfully applied lighting preset to {shot_file}")
+                    else:
+                        print(f"Failed to apply lighting preset to {shot_file}")
+                        QMessageBox.warning(self, "Error", "Failed to apply lighting preset to {shot_file}")
+                    break
 
     def _available_order_index(self, label: str) -> int:
         try:
