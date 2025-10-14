@@ -1,7 +1,9 @@
 from PyQt6.QtWidgets import QWidget, QFileDialog, QMessageBox, QAbstractItemView
 
+from app.config import Config
 from app.services.blender_settings import BlenderSettings
 from app.services.execute_program import ExecuteProgram
+from app.services.json_manager import JSONManager
 from app.ui.apply_light_preset_ui import Ui_Form
 from app.data.project import project_list, division_list
 from app.services.csv_manager import CSVManager
@@ -39,6 +41,30 @@ class ApplyLightPresetHandler(QWidget):
 
         self._wire_search_available()
         self._wire_search_selected()
+
+    def on_load(self):
+        data = JSONManager.read_json(Config.CONFIG_PATH)
+        if not data:
+            return
+        self.ui.lineEdit_blender.setText(data.get("blender_path", ""))
+        self.ui.lineEdit_csv.setText(data.get("csv_path", ""))
+        self.ui.lineEdit_presetBlend.setText(data.get("preset_blend_path", ""))
+        self.ui.lineEdit_presetJson.setText(data.get("preset_json_path", ""))
+        project_name = data.get("project_name", "")
+        if project_name:
+            index = self.ui.comboBox_project.findText(project_name)
+            if index != -1:
+                self.ui.comboBox_project.setCurrentIndex(index)
+
+    def on_save(self):
+        data = {
+            "blender_path": self.ui.lineEdit_blender.text(),
+            "csv_path": self.ui.lineEdit_csv.text(),
+            "preset_blend_path": self.ui.lineEdit_presetBlend.text(),
+            "preset_json_path": self.ui.lineEdit_presetJson.text(),
+            "project_name": self.ui.comboBox_project.currentText()
+        }
+        JSONManager.write_json(Config.CONFIG_PATH, data)
 
     def on_select_file(self, file_type: str, message: str):
         file_path, _ = QFileDialog.getOpenFileName(self, message, "", "All Files (*)")

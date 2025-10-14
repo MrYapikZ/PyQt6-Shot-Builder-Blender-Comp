@@ -1,4 +1,5 @@
 import json
+import os
 
 
 class JSONManager:
@@ -14,5 +15,15 @@ class JSONManager:
 
     @staticmethod
     def write_json(file_path, data):
-        with open(file_path, 'w') as file:
-            json.dump(data, file, indent=4)
+        existing_data = {}
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as f:
+                try:
+                    existing_data = json.load(f)
+                except json.JSONDecodeError:
+                    existing_data = {}
+
+        existing_data.update(data)
+
+        with open(file_path, 'w') as f:
+            json.dump(existing_data, f, indent=4)
