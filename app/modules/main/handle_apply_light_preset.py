@@ -32,6 +32,7 @@ class ApplyLightPresetHandler(QWidget):
         self.ui.toolButton_presetJson.clicked.connect(
             lambda: self.on_select_file("lighting_json", "Select Lighting Preset JSON File"))
         self.ui.pushButton_buttonClear.clicked.connect(self.on_clear)
+        self.ui.pushButton_buttonExecute.clicked.connect(self.on_generate)
 
         self._wire_search_available()
         self._wire_search_selected()
@@ -92,6 +93,40 @@ class ApplyLightPresetHandler(QWidget):
             row = self.ui.listWidget_selected.row(item)
             item = self.ui.listWidget_selected.takeItem(row)
             self.ui.listWidget_available.insertItem(insert_row, item)
+
+    def on_generate(self):
+        project_data = next((p for p in project_list if p[1] == self.ui.comboBox_project.currentText()), None)
+        if not project_data:
+            QMessageBox.warning(self, "Error", "No project selected")
+            return
+
+        project_production_path = FileManager().get_project_path(project_data[0])
+
+        # Get Blender executable path
+        blender_executable = self.ui.lineEdit_blender.text()
+        if not blender_executable or not FileManager().combine_paths(blender_executable).exists:
+            QMessageBox.warning(self, "Error", "Blender executable path is empty.")
+            return
+
+        for index in range(self.ui.listWidget_selected.count()):
+            shot_file = self.ui.listWidget_selected.item(index).text()
+            print(f"Generating for shot file: {shot_file}")
+
+            for row in self.csv_data:
+                ep, seq, shot, start_frame, end_frame = row[0].lower(), row[1].lower(), row[2].lower(), int(
+                    row[3]), int(row[4])
+                expected_shot_file = FileManager().generate_file_name(project_code=project_data[2], ep=ep, seq=seq,
+                                                                      shot=shot,
+                                                                      division=division_list[1][0], extension="blend")
+                if shot_file == expected_shot_file:
+                    lighting_path = FileManager().generate_shot_path(project_path=project_production_path,
+                                                                     production=division_list[1][2],
+                                                                     division=division_list[1][3], ep=ep, seq=seq,
+                                                                     shot=shot)
+                    lighting_file = FileManager().combine_paths(lighting_path, shot_file)
+                    lighting_progress_dir = FileManager().combine_paths(lighting_path, "progress", mkdir=True)
+                    next_path, nextversion, next_filename = FileManager().get_latest_version(
+                        progress_dir=str(lighting_progress_dir), shot_prefix=shot_file, ext=".blend")
 
     def _available_order_index(self, label: str) -> int:
         try:
