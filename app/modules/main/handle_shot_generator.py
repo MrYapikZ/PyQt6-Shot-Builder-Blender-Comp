@@ -45,9 +45,11 @@ class ShotGeneratorHandler(QWidget):
         self.ui.lineEdit_lightingPresetBlend.setText(
             "/mnt/J/03_post_production/01_lighting/preset_lighting/lighting_setup/lighting_setup.blend")
         self.ui.pushButton_loadConfig.clicked.connect(lambda: self.on_select_file("load_config", "Load Config File"))
-        self.ui.pushButton_saveConfig.clicked.connect(lambda: self.on_select_file("save_config", "Save Config File"))
+        self.ui.pushButton_saveConfig.clicked.connect(lambda: self.on_save_json_file("Save Config File"))
 
         self.csv_data = None
+
+        self._enable_drag_drop_lineedits()
 
         self.on_load()
 
@@ -137,10 +139,24 @@ class ShotGeneratorHandler(QWidget):
                 self.ui.lineEdit_lightingPresetBlend.setText(file_path)
             elif file_type == "lighting_json":
                 self.ui.lineEdit_lightingPresetJson.setText(file_path)
-            elif file_type == "save_config":
-                self.on_save(file_path)
             elif file_type == "load_config":
                 self.on_load(file_path)
+
+    def on_save_json_file(self, message: str, default_filename: str = "config.json"):
+        # Open a save file dialog, filtered for JSON files
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            message,
+            Config.CONFIG_PATH,
+            "JSON Files (*.json);;All Files (*)"
+        )
+
+        # Return the chosen file path if the user didn't cancel
+        if file_path:
+            # Ensure the file has the correct extension
+            if not file_path.endswith(".json"):
+                file_path += ".json"
+            self.on_save(file_path)
 
     def on_move_available_item(self):
         for item in self.ui.listWidget_available.selectedItems():
@@ -327,3 +343,40 @@ class ShotGeneratorHandler(QWidget):
         # This method is called when the window is closed
         self.on_save()
         event.accept()
+
+    def _enable_drag_drop_lineedits(self):
+        def enable_dragdrop(le, exts=None):
+            if not le:
+                return
+            le.setAcceptDrops(True)
+
+            def dragEnterEvent(event):
+                if event.mimeData().hasUrls():
+                    event.acceptProposedAction()
+                else:
+                    event.ignore()
+
+            def dropEvent(event):
+                if event.mimeData().hasUrls():
+                    file_path = event.mimeData().urls()[0].toLocalFile()
+                    if exts:
+                        for ext in exts:
+                            if file_path.lower().endswith(ext):
+                                le.setText(file_path)
+                                event.acceptProposedAction()
+                                return
+                        event.ignore()
+                    else:
+                        le.setText(file_path)
+                        event.acceptProposedAction()
+                else:
+                    event.ignore()
+
+            le.dragEnterEvent = dragEnterEvent
+            le.dropEvent = dropEvent
+
+        enable_dragdrop(self.ui.lineEdit_blender)
+        enable_dragdrop(self.ui.lineEdit_csv, [".csv"])
+        enable_dragdrop(self.ui.lineEdit_mastershot, [".blend"])
+        enable_dragdrop(self.ui.lineEdit_lightingPresetBlend, [".blend"])
+        enable_dragdrop(self.ui.lineEdit_lightingPresetJson, [".json"])
