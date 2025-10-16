@@ -41,15 +41,20 @@ class ApplyLightPresetHandler(QWidget):
 
         self._wire_search_available()
         self._wire_search_selected()
+        self._enable_drag_drop_lineedits()
+
+        self.on_load()
 
     def on_load(self):
         data = JSONManager.read_json(Config.CONFIG_PATH)
         if not data:
             return
-        self.ui.lineEdit_blender.setText(data.get("blender_path", ""))
-        self.ui.lineEdit_csv.setText(data.get("csv_path", ""))
-        self.ui.lineEdit_presetBlend.setText(data.get("preset_blend_path", ""))
-        self.ui.lineEdit_presetJson.setText(data.get("preset_json_path", ""))
+        sg_data = data['shot_generator']
+        self.ui.lineEdit_blender.setText(sg_data.get("blender_path", ""))
+        self.ui.lineEdit_csv.setText(sg_data.get("csv_path", ""))
+        self.ui.lineEdit_presetBlend.setText(sg_data.get("lighting_preset_blend", ""))
+        self.ui.lineEdit_presetJson.setText(sg_data.get("lighting_preset_json", ""))
+        print(self.ui.lineEdit_presetBlend.text())
         project_name = data.get("project_name", "")
         if project_name:
             index = self.ui.comboBox_project.findText(project_name)
@@ -89,6 +94,7 @@ class ApplyLightPresetHandler(QWidget):
         csv_path = self.ui.lineEdit_csv.text()
         if not csv_path:
             QMessageBox.warning(self, "Error", "CSV path is empty")
+            self.on_load()
             return
 
         # Read CSV file
@@ -226,3 +232,39 @@ class ApplyLightPresetHandler(QWidget):
         self.ui.lineEdit_availableSearch.clear()
         self.ui.lineEdit_selectedSearch.clear()
         self.csv_data = None
+
+    def _enable_drag_drop_lineedits(self):
+        def enable_dragdrop(le, exts=None):
+            if not le:
+                return
+            le.setAcceptDrops(True)
+
+            def dragEnterEvent(event):
+                if event.mimeData().hasUrls():
+                    event.acceptProposedAction()
+                else:
+                    event.ignore()
+
+            def dropEvent(event):
+                if event.mimeData().hasUrls():
+                    file_path = event.mimeData().urls()[0].toLocalFile()
+                    if exts:
+                        for ext in exts:
+                            if file_path.lower().endswith(ext):
+                                le.setText(file_path)
+                                event.acceptProposedAction()
+                                return
+                        event.ignore()
+                    else:
+                        le.setText(file_path)
+                        event.acceptProposedAction()
+                else:
+                    event.ignore()
+
+            le.dragEnterEvent = dragEnterEvent
+            le.dropEvent = dropEvent
+
+        enable_dragdrop(self.ui.lineEdit_blender)
+        enable_dragdrop(self.ui.lineEdit_csv, [".csv"])
+        enable_dragdrop(self.ui.lineEdit_presetBlend, [".blend"])
+        enable_dragdrop(self.ui.lineEdit_presetJson, [".json"])
