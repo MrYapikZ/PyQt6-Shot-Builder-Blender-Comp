@@ -11,7 +11,7 @@ class MainUI(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.setWindowTitle("Shot Builder Blend Comp")
-        self.ui.label_version.setText("v0.1.12")
+        self.ui.label_version.setText("v0.1.13")
 
         self.ui.tabWidget_main.addTab(ShotGeneratorHandler(), "Shot Generator")
         self.ui.tabWidget_main.addTab(ApplyLightPresetHandler(), "Apply Light Preset")
