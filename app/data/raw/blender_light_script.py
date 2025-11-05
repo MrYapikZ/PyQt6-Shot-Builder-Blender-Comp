@@ -405,6 +405,7 @@ def assign_receiver_collection_to_light(light: bpy.types.Object, rcv: bpy.types.
         return False
     try:
         light.light_linking.receiver_collection = rcv
+        light.light_linking.blocker_collection = rcv
         return True
     except Exception:
         return False
