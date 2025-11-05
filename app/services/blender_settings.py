@@ -723,6 +723,7 @@ class BlenderSettings:
                     return False
                 try:
                     light.light_linking.receiver_collection = rcv
+                    light.light_linking.blocker_collection = rcv
                     return True
                 except Exception:
                     return False
@@ -1225,6 +1226,7 @@ class BlenderSettings:
                     return False
                 try:
                     light.light_linking.receiver_collection = rcv
+                    light.light_linking.blocker_collection = rcv
                     return True
                 except Exception:
                     return False
