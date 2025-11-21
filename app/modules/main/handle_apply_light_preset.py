@@ -167,7 +167,7 @@ class ApplyLightPresetHandler(QWidget):
                         f"Next version path: {next_path}, next version: {nextversion}, next filename: {next_filename}")
 
                     apply_preset_script = BlenderSettings.generate_apply_preset_script(
-                        master_file=str(shot_file),
+                        master_file=str(lighting_file),
                         character_collection=character_collection_name,
                         output_path=str(lighting_file),
                         output_path_progress=str(next_path),
